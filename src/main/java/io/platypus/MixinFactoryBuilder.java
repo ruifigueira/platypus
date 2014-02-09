@@ -4,6 +4,7 @@ import static java.lang.String.format;
 import io.platypus.utils.Preconditions;
 import io.platypus.utils.Strings;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,16 +62,24 @@ public class MixinFactoryBuilder {
             return with(InstanceProviders.ofClass(implClass));
         }
 
+        public MixinFactoryBuilder with(InvocationHandler handler) {
+            addProvider(InstanceProviders.ofInstance(handler));
+            return MixinFactoryBuilder.this;
+        }
+
         public MixinFactoryBuilder with(InstanceProvider<? extends T> implProvider) {
-            for (Method method : intf.getDeclaredMethods()) {
+            addProvider(implProvider);
+            return MixinFactoryBuilder.this;
+        }
+
+        protected void addProvider(InstanceProvider<?> implProvider) {
+            for (Method method : intf.getMethods()) {
                 InstanceProvider<?> instanceProvider = methodsToProviders.get(method);
                 if (instanceProvider == null) {
                     methodsToProviders.put(method, implProvider);
                 }
             }
             if (intf != Object.class) intfs.add(intf);
-
-            return MixinFactoryBuilder.this;
         }
     }
 
@@ -80,7 +89,6 @@ public class MixinFactoryBuilder {
     public MixinFactoryBuilder() {
         this(InstanceProviders.ofClass(DefaultObjectImpl.class));
     }
-
 
     public MixinFactoryBuilder(InstanceProvider<? extends Object> objectProvider) {
         implement(Object.class).with(objectProvider);
