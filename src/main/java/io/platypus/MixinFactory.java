@@ -1,11 +1,11 @@
 package io.platypus;
 
+import com.google.common.reflect.TypeToken;
 
 /**
  *
  * @author rui.figueira
  *
- * @param <T>
  */
 public interface MixinFactory {
 
@@ -15,6 +15,8 @@ public interface MixinFactory {
      * @return
      */
     <T> T newInstance(Class<T> clazz);
+    <T> T newInstance(TypeToken<T> typeToken);
 
     Object newInstance();
+
 }

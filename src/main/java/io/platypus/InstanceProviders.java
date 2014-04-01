@@ -114,24 +114,26 @@ public class InstanceProviders {
 
     private static class MemoizingInstanceProvider<T> implements InstanceProvider<T> {
 
-        private final Object proxy;
+        private Object proxy;
         private final InstanceProvider<T> delegate;
 
         private boolean initialized = false;
         private T value;
 
-        public MemoizingInstanceProvider(Object proxy, InstanceProvider<T> delegate) {
-            this.proxy = Preconditions.checkNotNull(proxy);
+        public MemoizingInstanceProvider(InstanceProvider<T> delegate) {
             this.delegate = Preconditions.checkNotNull(delegate);
         }
 
         @Override
         public T provide(Object proxy) {
-            Preconditions.checkArgument(proxy == this.proxy, "This MemoizingInstanceProvider can only accept requests for proxy object %s, and received request for proxy object %s", this.proxy, proxy);
+            Preconditions.checkArgument(this.proxy == null || this.proxy == proxy, "This MemoizingInstanceProvider can only accept requests for proxy object %s, and received request for proxy object %s", this.proxy, proxy);
+
             if (!initialized) {
                 value = delegate.provide(proxy);
+                this.proxy = proxy;
                 initialized = true;
             }
+
             return value;
         }
 
@@ -145,7 +147,7 @@ public class InstanceProviders {
         return new ClassInstanceProvider<T>(clazz);
     }
 
-    public static <T> InstanceProvider<T> memoizeProxy(Object proxy, InstanceProvider<T> provider) {
-        return new MemoizingInstanceProvider<T>(proxy, provider);
+    public static <T> InstanceProvider<T> memoize(InstanceProvider<T> provider) {
+        return new MemoizingInstanceProvider<T>(provider);
     }
 }

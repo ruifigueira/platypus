@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.google.common.reflect.TypeToken;
+
 public class DefaultMixinFactory implements MixinFactory {
 
     private class MixinInvocationHandler implements InvocationHandler {
@@ -41,6 +43,13 @@ public class DefaultMixinFactory implements MixinFactory {
         protected <T> T getProxy(Class<T> clazz) {
             Preconditions.checkNotNull(clazz);
             Preconditions.checkArgument(clazz.isInstance(proxy), "Proxy does not implements %s", clazz);
+            return (T) proxy;
+        }
+
+        @SuppressWarnings("unchecked")
+        protected <T> T getProxy(TypeToken<T> typeToken) {
+            Preconditions.checkNotNull(typeToken);
+            Preconditions.checkArgument(typeToken.getRawType().isInstance(proxy), "Proxy does not implements %s", typeToken);
             return (T) proxy;
         }
 
@@ -84,5 +93,8 @@ public class DefaultMixinFactory implements MixinFactory {
         return new MixinInvocationHandler().getProxy(clazz);
     }
 
-
+    @Override
+    public <T> T newInstance(TypeToken<T> typeToken) {
+        return new MixinInvocationHandler().getProxy(typeToken);
+    }
 }

@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.reflect.TypeToken;
+
 
 public class MixinFactoryBuilder {
 
@@ -50,12 +52,18 @@ public class MixinFactoryBuilder {
         }
     }
 
-    public class ImplementBuilder<T> {
+    public static class ImplementBuilder<T> {
 
         private final Class<T> intf;
+        private MixinFactoryBuilder builder;
 
-        public ImplementBuilder(Class<T> intf) {
+        public ImplementBuilder(MixinFactoryBuilder builder, Class<T> intf) {
             this.intf = intf;
+            this.builder = builder;
+        }
+
+        public MixinFactoryBuilder with(T object) {
+            return with(InstanceProviders.ofInstance(object));
         }
 
         public MixinFactoryBuilder with(Class<? extends T> implClass) {
@@ -64,22 +72,22 @@ public class MixinFactoryBuilder {
 
         public MixinFactoryBuilder with(InvocationHandler handler) {
             addProvider(InstanceProviders.ofInstance(handler));
-            return MixinFactoryBuilder.this;
+            return builder;
         }
 
         public MixinFactoryBuilder with(InstanceProvider<? extends T> implProvider) {
             addProvider(implProvider);
-            return MixinFactoryBuilder.this;
+            return builder;
         }
 
         protected void addProvider(InstanceProvider<?> implProvider) {
             for (Method method : intf.getMethods()) {
-                InstanceProvider<?> instanceProvider = methodsToProviders.get(method);
+                InstanceProvider<?> instanceProvider = builder.methodsToProviders.get(method);
                 if (instanceProvider == null) {
-                    methodsToProviders.put(method, implProvider);
+                    builder.methodsToProviders.put(method, implProvider);
                 }
             }
-            if (intf != Object.class) intfs.add(intf);
+            if (intf != Object.class) builder.intfs.add(intf);
         }
     }
 
@@ -94,9 +102,21 @@ public class MixinFactoryBuilder {
         implement(Object.class).with(objectProvider);
     }
 
+    protected MixinFactoryBuilder(MixinFactoryBuilder other) {
+        this.intfs.addAll(other.intfs);
+        this.methodsToProviders.putAll(other.methodsToProviders);
+    }
+
     public <T> ImplementBuilder<T> implement(Class<T> intf) {
         Preconditions.checkArgument(intf == Object.class || intf.isInterface());
-        return new ImplementBuilder<T>(intf);
+        return new ImplementBuilder<T>(clone(), intf);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> ImplementBuilder<T> implement(TypeToken<T> intf) {
+        Class<? super T> rawType = intf.getRawType();
+        Preconditions.checkArgument(rawType == Object.class || rawType.isInterface());
+        return new ImplementBuilder<T>(clone(), (Class<T>) intf.getRawType());
     }
 
     public MixinFactory build() {
@@ -105,5 +125,10 @@ public class MixinFactoryBuilder {
 
     public MixinFactory build(ClassLoader classloader) {
         return new DefaultMixinFactory(classloader, intfs, methodsToProviders);
+    }
+
+    @Override
+    protected MixinFactoryBuilder clone() {
+        return new MixinFactoryBuilder(this);
     }
 }
