@@ -1,7 +1,5 @@
 package io.platypus;
 
-import io.platypus.utils.Preconditions;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -10,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.google.common.base.Preconditions;
 import com.google.common.reflect.TypeToken;
 
 public class DefaultMixinFactory implements MixinFactory {

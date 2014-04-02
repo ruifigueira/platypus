@@ -1,8 +1,6 @@
 package io.platypus;
 
 import static java.lang.String.format;
-import io.platypus.utils.Preconditions;
-import io.platypus.utils.Strings;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -15,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.reflect.TypeToken;
 
 
@@ -48,7 +48,7 @@ public class MixinFactoryBuilder {
                     return o1.getName().compareTo(o2.getName());
                 }
             });
-            return format("Proxy{%s}", Strings.join(intfs, ", "));
+            return format("Proxy{%s}", Joiner.on(", ").join(intfs));
         }
     }
 

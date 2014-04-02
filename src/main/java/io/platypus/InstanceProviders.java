@@ -1,12 +1,16 @@
 package io.platypus;
 
-import static io.platypus.utils.Preconditions.checkNotNull;
-import static io.platypus.utils.Throwables.propagate;
+import static com.google.common.base.Throwables.propagate;
+import static com.google.common.collect.Iterables.toArray;
 import static java.lang.String.format;
-import io.platypus.utils.Preconditions;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
+import java.util.Collection;
+
+import com.google.common.base.Preconditions;
 
 public class InstanceProviders {
 
@@ -85,7 +89,7 @@ public class InstanceProviders {
         private final T obj;
 
         public IdentityInstanceProvider(T obj) {
-            this.obj = checkNotNull(obj);
+            this.obj = Preconditions.checkNotNull(obj);
         }
 
         @Override
@@ -139,6 +143,23 @@ public class InstanceProviders {
 
     }
 
+    private static final class InvocationHandlerInstanceProviderAdapter<T> implements InstanceProvider<T> {
+
+        private final InvocationHandler handler;
+        private final Class<?>[] intfs;
+
+        private InvocationHandlerInstanceProviderAdapter(InvocationHandler handler, Class<?> ... intfs) {
+            this.handler = handler;
+            this.intfs = intfs;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public T provide(Object proxy) {
+            return (T) Proxy.newProxyInstance(proxy.getClass().getClassLoader(), intfs, handler);
+        }
+    }
+
     public static <T> InstanceProvider<T> ofInstance(T instance) {
         return new IdentityInstanceProvider<T>(instance);
     }
@@ -147,7 +168,21 @@ public class InstanceProviders {
         return new ClassInstanceProvider<T>(clazz);
     }
 
+    public static <T> InstanceProvider<T> adapt(InvocationHandler handler, Collection<Class<?>> intfs) {
+        Class<Class<?>> classClazz = unsafeCast(Class.class);
+        return new InvocationHandlerInstanceProviderAdapter<T>(handler, toArray(intfs, classClazz));
+    }
+
+    public static <T> InstanceProvider<T> adapt(InvocationHandler handler, Class<?> ... intfs) {
+        return new InvocationHandlerInstanceProviderAdapter<T>(handler, intfs);
+    }
+
     public static <T> InstanceProvider<T> memoize(InstanceProvider<T> provider) {
         return new MemoizingInstanceProvider<T>(provider);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected static <T> T unsafeCast(Object obj) {
+        return (T) obj;
     }
 }
