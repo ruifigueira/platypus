@@ -5,6 +5,7 @@ import static com.google.common.collect.FluentIterable.from;
 import static java.lang.String.format;
 import io.platypus.AbstractInstanceConfigurer;
 import io.platypus.IncompleteImplementationException;
+import io.platypus.Mixin;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -68,6 +69,16 @@ public class ProxyInvocationHandler<T> implements InvocationHandler {
         checkCompleteImplementation(allMixinIntfs);
 
         instanciateProviders(allMixinIntfs);
+        initImplementationsProxy();
+    }
+
+    private void initImplementationsProxy() {
+        Set<Object> identityImpls = Sets.newIdentityHashSet();
+        identityImpls.addAll(impls.values());
+
+        for (Mixin.Impl impl : from(identityImpls).filter(Mixin.Impl.class)) {
+            impl.setProxy(proxy);
+        }
     }
 
     public T getProxy() {
@@ -118,7 +129,7 @@ public class ProxyInvocationHandler<T> implements InvocationHandler {
     protected void instanciateProviders(Set<Class<?>> allMixinIntfs) {
         for (InterfacesInstanceProvider<?> provider : providers) {
             Set<Class<?>> allProviderIntfs = from(provider.getImplementedInterfaces()).transformAndConcat(ALL_INTFS_FN).toSet();
-            Object impl = provider.provide(proxy);
+            Object impl = provider.provide();
             for (Class<?> intf : allProviderIntfs ) {
                 if (!(allMixinIntfs.contains(intf) || intf == Object.class)) {
                     LOGGER.trace("This Mixin class does not implement {}, skipping its instance provider", intf);

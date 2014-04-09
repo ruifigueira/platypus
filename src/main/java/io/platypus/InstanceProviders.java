@@ -20,7 +20,7 @@ public class InstanceProviders {
         }
 
         @Override
-        public T provide(Object proxy) {
+        public T provide() {
             return obj;
         }
 
@@ -45,7 +45,6 @@ public class InstanceProviders {
 
     private static class MemoizingInstanceProvider<T> implements InstanceProvider<T> {
 
-        private Object proxy;
         private final InstanceProvider<T> delegate;
 
         private boolean initialized = false;
@@ -56,12 +55,9 @@ public class InstanceProviders {
         }
 
         @Override
-        public T provide(Object proxy) {
-            Preconditions.checkArgument(this.proxy == null || this.proxy == proxy, "This MemoizingInstanceProvider can only accept requests for proxy object %s, and received request for proxy object %s", this.proxy, proxy);
-
+        public T provide() {
             if (!initialized) {
-                value = delegate.provide(proxy);
-                this.proxy = proxy;
+                value = delegate.provide();
                 initialized = true;
             }
 
@@ -82,8 +78,8 @@ public class InstanceProviders {
 
         @Override
         @SuppressWarnings("unchecked")
-        public T provide(Object proxy) {
-            return (T) Proxy.newProxyInstance(proxy.getClass().getClassLoader(), intfs, handler);
+        public T provide() {
+            return (T) Proxy.newProxyInstance(handler.getClass().getClassLoader(), intfs, handler);
         }
     }
 

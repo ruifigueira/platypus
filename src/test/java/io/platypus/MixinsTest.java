@@ -2,6 +2,8 @@ package io.platypus;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
 
 import java.lang.reflect.Method;
@@ -13,7 +15,7 @@ import com.google.common.reflect.AbstractInvocationHandler;
 
 public class MixinsTest {
 
-    public interface Foo {
+    public interface Foo extends Mixin {
         String foo();
     }
 
@@ -24,12 +26,9 @@ public class MixinsTest {
     public interface FooBar extends Foo, Bar {
     }
 
-    public class FooImpl implements Foo {
+    public class FooImpl extends Mixin.Impl implements Foo {
 
-        private Foo that;
-
-        public FooImpl(Foo that) {
-            this.that = that;
+        public FooImpl() {
         }
 
         @Override
@@ -38,7 +37,7 @@ public class MixinsTest {
         }
 
         public Foo getThat() {
-            return that;
+            return this.as(Foo.class);
         }
     }
 
@@ -56,7 +55,7 @@ public class MixinsTest {
         FooBar fooBar = fooBarClass.newInstance(new AbstractInstanceConfigurer<FooBar>() {
             @Override
             protected void configure() {
-                implement(Foo.class).with(new FooImpl(proxy));
+                implement(Foo.class).with(new FooImpl());
                 implement(Bar.class).with(new BarImpl());
             }
         });
@@ -103,8 +102,7 @@ public class MixinsTest {
                 this.proxy = proxy;
                 return Defaults.defaultValue(method.getReturnType());
             }
-        }
-        ;
+        };
         final TestInvocationHandler handler = new TestInvocationHandler();
 
         // when
@@ -112,14 +110,14 @@ public class MixinsTest {
             @Override
             protected void configure() {
                 InstanceProvider<Bar> barProxyProvider = InstanceProviders.adapt(handler, Bar.class);
-                implement(Foo.class).with(new FooImpl(proxy));
+                implement(Foo.class).with(new FooImpl());
                 implement(Bar.class).with(barProxyProvider);
             }
         });
         foobar.bar();
 
         // then
-        assertThat(handler.proxy, is((Object) foobar));
+        assertThat(handler.proxy, sameInstance((Object) foobar));
     }
 
     @Test
@@ -128,14 +126,20 @@ public class MixinsTest {
         MixinClass<Mixin> mixinClass = Mixins.createClass(Mixin.class, FooBar.class);
 
         // when
+        final Foo foo = new FooImpl();
+        // this will initialize foo with the proxy
         Mixin mixin = mixinClass.newInstance(new AbstractInstanceConfigurer<Mixin>() {
             @Override
             protected void configure() {
-                implement(Mixin.class).with(new Mixin.Impl(proxy));
-                assertThat(proxy.as(Foo.class), is((Foo) proxy));
+                implement(Object.class).with(new Object());
+                implement(Foo.class).with(foo);
+                implement(Bar.class).with(new BarImpl());
+                assertThat(foo.as(Foo.class), is(foo));
             }
         });
-
+        assertThat((Foo) mixin, not(sameInstance(foo)));
+        assertThat(foo.as(Foo.class), sameInstance(mixin));
+        assertThat(mixin.as(Foo.class), sameInstance(mixin));
     }
 
 }

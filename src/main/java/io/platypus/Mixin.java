@@ -12,10 +12,10 @@ public interface Mixin {
 
     public static class Impl implements Mixin {
 
-        private final Object that;
+        private Object that;
 
-        public Impl(Object that) {
-            this.that = that == null ? this : that;
+        public Impl() {
+            that = this;
         }
 
         @Override
@@ -45,6 +45,11 @@ public interface Mixin {
             Class<?> clazz = type.getRawType();
             Preconditions.checkState(clazz.isInstance(that), "that is not an instance of %s", clazz);
             return (A) that;
+        }
+
+        public final void setProxy(Object proxy) {
+            Preconditions.checkState(this.that == this, "Mixin proxy instance can only be set once!");
+            this.that = Preconditions.checkNotNull(proxy);
         }
     }
 }

@@ -78,7 +78,6 @@ public abstract class AbstractInstanceConfigurer<T> {
     }
 
     private ProxyInvocationHandler<T> proxyInvocationHandler;
-    protected T proxy;
 
     protected Implementation implement(Class<?> ... intfs) {
         return new Implementation(intfs);
@@ -94,12 +93,10 @@ public abstract class AbstractInstanceConfigurer<T> {
         checkState(this.proxyInvocationHandler == null, "Re-entry is not allowed.");
 
         this.proxyInvocationHandler = checkNotNull(proxyInvocationHandler, "proxyInvocationHandler");
-        this.proxy = proxyInvocationHandler.getProxy();
         try {
           configure();
         }
         finally {
-            this.proxy = null;
             this.proxyInvocationHandler = null;
         }
     }

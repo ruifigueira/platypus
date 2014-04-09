@@ -23,8 +23,8 @@ public class InterfacesInstanceProviders {
         }
 
         @Override
-        public T provide(Object proxy) {
-            return provider.provide(proxy);
+        public T provide() {
+            return provider.provide();
         }
 
         @Override
