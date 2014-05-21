@@ -1,6 +1,7 @@
 package io.platypus;
 
 import static com.google.common.collect.Iterables.toArray;
+import static io.platypus.internal.Casts.unsafeCast;
 import static java.lang.String.format;
 
 import java.lang.reflect.InvocationHandler;
@@ -98,10 +99,5 @@ public class InstanceProviders {
 
     public static <T> InstanceProvider<T> memoize(InstanceProvider<T> provider) {
         return new MemoizingInstanceProvider<T>(provider);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected static <T> T unsafeCast(Object obj) {
-        return (T) obj;
     }
 }

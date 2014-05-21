@@ -52,7 +52,7 @@ public class MixinsTest {
     public void testSpecificImplementation() {
         MixinClass<FooBar> fooBarClass = Mixins.createClass(FooBar.class, Foo.class, Bar.class);
 
-        FooBar fooBar = fooBarClass.newInstance(new AbstractInstanceConfigurer<FooBar>() {
+        FooBar fooBar = fooBarClass.newInstance(new AbstractMixinConfigurer<FooBar>() {
             @Override
             protected void configure() {
                 implement(Foo.class).with(new FooImpl());
@@ -68,7 +68,7 @@ public class MixinsTest {
     public void testInterfaceWithNoImplementation() {
         MixinClass<FooBar> fooBarClass = Mixins.createClass(FooBar.class);
 
-        fooBarClass.newInstance(new AbstractInstanceConfigurer<FooBar>() {
+        fooBarClass.newInstance(new AbstractMixinConfigurer<FooBar>() {
             @Override
             protected void configure() {
                 implement(Foo.class);
@@ -81,7 +81,7 @@ public class MixinsTest {
     public void testIncompleteImplementation() {
         MixinClass<FooBar> fooBarClass = Mixins.createClass(FooBar.class);
 
-        fooBarClass.newInstance(new AbstractInstanceConfigurer<FooBar>() {
+        fooBarClass.newInstance(new AbstractMixinConfigurer<FooBar>() {
             @Override
             protected void configure() {
                 implement(Bar.class).with(new BarImpl());
@@ -106,7 +106,7 @@ public class MixinsTest {
         final TestInvocationHandler handler = new TestInvocationHandler();
 
         // when
-        FooBar foobar = fooBarClass.newInstance(new AbstractInstanceConfigurer<FooBar>() {
+        FooBar foobar = fooBarClass.newInstance(new AbstractMixinConfigurer<FooBar>() {
             @Override
             protected void configure() {
                 InstanceProvider<Bar> barProxyProvider = InstanceProviders.adapt(handler, Bar.class);
@@ -128,7 +128,7 @@ public class MixinsTest {
         // when
         final Foo foo = new FooImpl();
         // this will initialize foo with the proxy
-        Mixin mixin = mixinClass.newInstance(new AbstractInstanceConfigurer<Mixin>() {
+        Mixin mixin = mixinClass.newInstance(new AbstractMixinConfigurer<Mixin>() {
             @Override
             protected void configure() {
                 implement(Object.class).with(new Object());

@@ -23,8 +23,8 @@ import com.google.common.collect.ImmutableSet;
  * FooBar fooBar = fooBarClass.newInstance(new AbstractInstanceConfigurer<FooBar>() {
  *   &#64;Override
  *   protected void configure() {
- *     implement(Foo.class).with(new FooImpl(proxy);
- *     implement(Bar.class).with(new BarImpl(proxy);
+ *     implement(Foo.class).with(new FooImpl());
+ *     implement(Bar.class).with(new BarImpl());
  *   }
  * });
  * </pre>
@@ -33,10 +33,10 @@ import com.google.common.collect.ImmutableSet;
  *
  * @param <T>
  */
-public abstract class AbstractInstanceConfigurer<T> {
+public abstract class AbstractMixinConfigurer<T> implements MixinConfigurer<T> {
 
-    public static <T> AbstractInstanceConfigurer<T> nullInstanceConfigurer() {
-        return new AbstractInstanceConfigurer<T>() {
+    public static <T> MixinConfigurer<T> nullInstanceConfigurer() {
+        return new AbstractMixinConfigurer<T>() {
             @Override
             protected void configure() {
             }
@@ -62,17 +62,17 @@ public abstract class AbstractInstanceConfigurer<T> {
             this.intfs = ImmutableSet.copyOf(intfs);
         }
 
-        public AbstractInstanceConfigurer<T> with(InstanceProvider<?> provider) {
+        public MixinConfigurer<T> with(InstanceProvider<?> provider) {
             Preconditions.checkState(proxyInvocationHandler != null, "implement(...).with(...) can only be called inside configure()!");
             proxyInvocationHandler.add(InterfacesInstanceProviders.of(provider, intfs));
-            return AbstractInstanceConfigurer.this;
+            return AbstractMixinConfigurer.this;
         }
 
-        public AbstractInstanceConfigurer<T> with(Object instance) {
+        public MixinConfigurer<T> with(Object instance) {
             return with(InstanceProviders.ofInstance(instance));
         }
 
-        public AbstractInstanceConfigurer<T> with(InvocationHandler handler) {
+        public MixinConfigurer<T> with(InvocationHandler handler) {
             return with(InstanceProviders.adapt(handler, intfs));
         }
     }
@@ -89,7 +89,11 @@ public abstract class AbstractInstanceConfigurer<T> {
 
     protected abstract void configure();
 
-    public final void doConfigure(ProxyInvocationHandler<T> proxyInvocationHandler) {
+    /* (non-Javadoc)
+     * @see io.platypus.MixinConfigurer#configure(io.platypus.internal.ProxyInvocationHandler)
+     */
+    @Override
+    public final void configure(ProxyInvocationHandler<T> proxyInvocationHandler) {
         checkState(this.proxyInvocationHandler == null, "Re-entry is not allowed.");
 
         this.proxyInvocationHandler = checkNotNull(proxyInvocationHandler, "proxyInvocationHandler");

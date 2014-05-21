@@ -8,9 +8,7 @@ public interface MixinClass<T> extends Type {
 
     public Set<Class<?>> getDeclaredInterfaces();
 
-    public T newInstance();
+    public T newInstance(MixinConfigurer<?> ... providers);
 
-    public T newInstance(AbstractInstanceConfigurer<?> ... providers);
-
-    public T newInstance(Collection<AbstractInstanceConfigurer<?>> providers);
+    public T newInstance(Collection<MixinConfigurer<?>> providers);
 }

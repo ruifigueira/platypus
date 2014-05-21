@@ -4,8 +4,8 @@ import static com.google.common.base.Predicates.not;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.collect.FluentIterable.from;
 import static io.platypus.internal.Casts.unsafeCast;
-import io.platypus.AbstractInstanceConfigurer;
 import io.platypus.MixinClass;
+import io.platypus.MixinConfigurer;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
@@ -71,14 +71,8 @@ public class MixinClassImpl<T> implements MixinClass<T> {
     }
 
     @Override
-    public T newInstance() {
-        List<AbstractInstanceConfigurer<?>> configurers = Collections.emptyList();
-        return newInstance(configurers);
-    }
-
-    @Override
-    public T newInstance(AbstractInstanceConfigurer<?>... configurers) {
-        List<AbstractInstanceConfigurer<?>> configurerList;
+    public T newInstance(MixinConfigurer<?>... configurers) {
+        List<MixinConfigurer<?>> configurerList;
         if (configurers == null) {
             configurerList = Collections.emptyList();
         } else {
@@ -88,7 +82,7 @@ public class MixinClassImpl<T> implements MixinClass<T> {
     }
 
     @Override
-    public T newInstance(Collection<AbstractInstanceConfigurer<?>> configurers) {
+    public T newInstance(Collection<MixinConfigurer<?>> configurers) {
         try {
             ProxyInvocationHandler<T> proxyInvocationHandler = new ProxyInvocationHandler<T>(this, configurers);
             return proxyInvocationHandler.getProxy();

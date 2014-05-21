@@ -3,9 +3,9 @@ package io.platypus.internal;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.collect.FluentIterable.from;
 import static java.lang.String.format;
-import io.platypus.AbstractInstanceConfigurer;
 import io.platypus.IncompleteImplementationException;
 import io.platypus.Mixin;
+import io.platypus.MixinConfigurer;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -56,12 +56,12 @@ public class ProxyInvocationHandler<T> implements InvocationHandler {
     private final List<InterfacesInstanceProvider<?>> providers = Lists.newArrayList();
     private final LinkedHashMap<Class<?>, Object> impls = Maps.newLinkedHashMap();
 
-    public ProxyInvocationHandler(MixinClassImpl<T> mixinClass, Collection<AbstractInstanceConfigurer<?>> configurers) {
+    public ProxyInvocationHandler(MixinClassImpl<T> mixinClass, Collection<MixinConfigurer<?>> configurers) {
         this.mixinClass = mixinClass;
         this.proxy = newProxyInstance();
 
         // this will add all the necessary providers
-        for (AbstractInstanceConfigurer<?> configurer : configurers) {
+        for (MixinConfigurer<?> configurer : configurers) {
             unsafeDoConfigure(configurer);
         }
 
@@ -122,8 +122,8 @@ public class ProxyInvocationHandler<T> implements InvocationHandler {
     }
 
     @SuppressWarnings("unchecked")
-    protected void unsafeDoConfigure(@SuppressWarnings("rawtypes") AbstractInstanceConfigurer configurer) {
-        configurer.doConfigure(this);
+    protected void unsafeDoConfigure(@SuppressWarnings("rawtypes") MixinConfigurer configurer) {
+        configurer.configure(this);
     }
 
     protected void instanciateProviders(Set<Class<?>> allMixinIntfs) {
