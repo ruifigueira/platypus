@@ -13,7 +13,7 @@ import org.junit.Test;
 import com.google.common.base.Defaults;
 import com.google.common.reflect.AbstractInvocationHandler;
 
-public class MixinsTest {
+public class MixinClassesTest {
 
     public interface Foo extends Mixin {
         String foo();
@@ -50,11 +50,11 @@ public class MixinsTest {
 
     @Test
     public void testSpecificImplementation() {
-        MixinClass<FooBar> fooBarClass = Mixins.createClass(FooBar.class, Foo.class, Bar.class);
+        MixinClass<FooBar> fooBarClass = MixinClasses.create(FooBar.class, Foo.class, Bar.class);
 
-        FooBar fooBar = fooBarClass.newInstance(new AbstractMixinConfigurer<FooBar>() {
+        FooBar fooBar = fooBarClass.newInstance(new AbstractMixinInitializer() {
             @Override
-            protected void configure() {
+            protected void initialize() {
                 implement(Foo.class).with(new FooImpl());
                 implement(Bar.class).with(new BarImpl());
             }
@@ -66,11 +66,11 @@ public class MixinsTest {
 
     @Test(expected = IncompleteImplementationException.class)
     public void testInterfaceWithNoImplementation() {
-        MixinClass<FooBar> fooBarClass = Mixins.createClass(FooBar.class);
+        MixinClass<FooBar> fooBarClass = MixinClasses.create(FooBar.class);
 
-        fooBarClass.newInstance(new AbstractMixinConfigurer<FooBar>() {
+        fooBarClass.newInstance(new AbstractMixinInitializer() {
             @Override
-            protected void configure() {
+            protected void initialize() {
                 implement(Foo.class);
                 implement(Bar.class).with(new BarImpl());
             }
@@ -79,11 +79,11 @@ public class MixinsTest {
 
     @Test(expected = IncompleteImplementationException.class)
     public void testIncompleteImplementation() {
-        MixinClass<FooBar> fooBarClass = Mixins.createClass(FooBar.class);
+        MixinClass<FooBar> fooBarClass = MixinClasses.create(FooBar.class);
 
-        fooBarClass.newInstance(new AbstractMixinConfigurer<FooBar>() {
+        fooBarClass.newInstance(new AbstractMixinInitializer() {
             @Override
-            protected void configure() {
+            protected void initialize() {
                 implement(Bar.class).with(new BarImpl());
             }
         });
@@ -92,7 +92,7 @@ public class MixinsTest {
     @Test
     public void testInvocationHandlerImplementation() {
         // given
-        MixinClass<FooBar> fooBarClass = Mixins.createClass(FooBar.class);
+        MixinClass<FooBar> fooBarClass = MixinClasses.create(FooBar.class);
         class TestInvocationHandler extends AbstractInvocationHandler {
 
             Object proxy;
@@ -106,9 +106,9 @@ public class MixinsTest {
         final TestInvocationHandler handler = new TestInvocationHandler();
 
         // when
-        FooBar foobar = fooBarClass.newInstance(new AbstractMixinConfigurer<FooBar>() {
+        FooBar foobar = fooBarClass.newInstance(new AbstractMixinInitializer() {
             @Override
-            protected void configure() {
+            protected void initialize() {
                 InstanceProvider<Bar> barProxyProvider = InstanceProviders.adapt(handler, Bar.class);
                 implement(Foo.class).with(new FooImpl());
                 implement(Bar.class).with(barProxyProvider);
@@ -123,14 +123,14 @@ public class MixinsTest {
     @Test
     public void testMixinInitialization() {
         // given
-        MixinClass<Mixin> mixinClass = Mixins.createClass(Mixin.class, FooBar.class);
+        MixinClass<Mixin> mixinClass = MixinClasses.create(Mixin.class, FooBar.class);
 
         // when
         final Foo foo = new FooImpl();
         // this will initialize foo with the proxy
-        Mixin mixin = mixinClass.newInstance(new AbstractMixinConfigurer<Mixin>() {
+        Mixin mixin = mixinClass.newInstance(new AbstractMixinInitializer() {
             @Override
-            protected void configure() {
+            protected void initialize() {
                 implement(Object.class).with(new Object());
                 implement(Foo.class).with(foo);
                 implement(Bar.class).with(new BarImpl());

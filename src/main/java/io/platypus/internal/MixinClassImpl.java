@@ -5,7 +5,7 @@ import static com.google.common.base.Throwables.propagate;
 import static com.google.common.collect.FluentIterable.from;
 import static io.platypus.internal.Casts.unsafeCast;
 import io.platypus.MixinClass;
-import io.platypus.MixinConfigurer;
+import io.platypus.MixinInitializer;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
@@ -13,7 +13,6 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -71,20 +70,9 @@ public class MixinClassImpl<T> implements MixinClass<T> {
     }
 
     @Override
-    public T newInstance(MixinConfigurer<?>... configurers) {
-        List<MixinConfigurer<?>> configurerList;
-        if (configurers == null) {
-            configurerList = Collections.emptyList();
-        } else {
-            configurerList = Arrays.asList(configurers);
-        }
-        return newInstance(configurerList);
-    }
-
-    @Override
-    public T newInstance(Collection<MixinConfigurer<?>> configurers) {
+    public T newInstance(MixinInitializer initializer) {
         try {
-            ProxyInvocationHandler<T> proxyInvocationHandler = new ProxyInvocationHandler<T>(this, configurers);
+            ProxyInvocationHandler<T> proxyInvocationHandler = new ProxyInvocationHandler<T>(this, initializer);
             return proxyInvocationHandler.getProxy();
         } catch (Exception e) {
             throw propagate(e);

@@ -4,13 +4,19 @@ import static com.google.common.base.Throwables.propagate;
 import static com.google.common.collect.FluentIterable.from;
 import static java.lang.String.format;
 import io.platypus.IncompleteImplementationException;
+import io.platypus.InstanceProvider;
+import io.platypus.InstanceProviders;
 import io.platypus.Mixin;
-import io.platypus.MixinConfigurer;
+import io.platypus.MixinImplementor;
+import io.platypus.MixinInitializer;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
@@ -20,12 +26,14 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-public class ProxyInvocationHandler<T> implements InvocationHandler {
+public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplementor {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ProxyInvocationHandler.class);
 
@@ -44,26 +52,73 @@ public class ProxyInvocationHandler<T> implements InvocationHandler {
         }
     };
 
-    static final Function<InterfacesInstanceProvider<?>, Iterable<Class<?>>> PROVIDER_IMPLEMENTED_INTFS_FN = new Function<InterfacesInstanceProvider<?>, Iterable<Class<?>>>() {
+    static final Function<InterfacesInstanceProvider, Iterable<Class<?>>> PROVIDER_IMPLEMENTED_INTFS_FN = new Function<InterfacesInstanceProvider, Iterable<Class<?>>>() {
         @Override
-        public Iterable<Class<?>> apply(InterfacesInstanceProvider<?> provider) {
+        public Iterable<Class<?>> apply(InterfacesInstanceProvider provider) {
             return provider.getImplementedInterfaces();
         }
     };
 
+    private static class InterfacesInstanceProvider {
+
+        private final InstanceProvider<?> provider;
+        private final Set<Class<?>> intfs;
+
+        public InterfacesInstanceProvider(InstanceProvider<?> provider, Collection<Class<?>> intfs) {
+            this.provider = provider;
+            this.intfs = ImmutableSet.copyOf(intfs);
+        }
+
+        public Object provide() {
+            return provider.provide();
+        }
+
+        public Set<Class<?>> getImplementedInterfaces() {
+            return intfs;
+        }
+    }
+
+    private class ImplementationImpl<I> implements Implementation<I> {
+
+        private final Collection<Class<?>> intfs;
+
+        public ImplementationImpl(Class<I> intf) {
+            this.intfs = Casts.unsafeCast(Collections.singleton(intf));
+        }
+
+        public ImplementationImpl(Collection<Class<?>> intfs) {
+            this.intfs = intfs;
+        }
+
+        @Override
+        public MixinImplementor with(I obj) {
+            return with(InstanceProviders.ofInstance(obj));
+        }
+
+        @Override
+        public MixinImplementor with(InvocationHandler handler) {
+            return with(InstanceProviders.<I>adapt(handler, intfs));
+        }
+
+        @Override
+        public MixinImplementor with(InstanceProvider<? extends I> provider) {
+            providers.add(new InterfacesInstanceProvider(provider, intfs));
+            return ProxyInvocationHandler.this;
+        }
+
+    }
+
     private final MixinClassImpl<T> mixinClass;
     private final T proxy;
-    private final List<InterfacesInstanceProvider<?>> providers = Lists.newArrayList();
+    private final List<InterfacesInstanceProvider> providers = Lists.newArrayList();
     private final LinkedHashMap<Class<?>, Object> impls = Maps.newLinkedHashMap();
 
-    public ProxyInvocationHandler(MixinClassImpl<T> mixinClass, Collection<MixinConfigurer<?>> configurers) {
+    public ProxyInvocationHandler(MixinClassImpl<T> mixinClass, MixinInitializer initializer) {
         this.mixinClass = mixinClass;
         this.proxy = newProxyInstance();
 
         // this will add all the necessary providers
-        for (MixinConfigurer<?> configurer : configurers) {
-            unsafeDoConfigure(configurer);
-        }
+        initializer.initialize(this);
 
         Set<Class<?>> allMixinIntfs = from(mixinClass.intfs).transformAndConcat(ALL_INTFS_FN).toSet();
         checkCompleteImplementation(allMixinIntfs);
@@ -81,20 +136,41 @@ public class ProxyInvocationHandler<T> implements InvocationHandler {
         }
     }
 
+    @Override
+    public <I> Implementation<I> implement(Class<I> clazz) {
+        return new ImplementationImpl<I>(clazz);
+    }
+
+    @Override
+    public Implementation<Object> implement(Class<?>... clazz) {
+        return implement(Arrays.asList(clazz));
+    }
+
+    @Override
+    public Implementation<Object> implement(Collection<Class<?>> clazzes) {
+        return new ImplementationImpl<Object>(clazzes);
+    }
+
     public T getProxy() {
         return proxy;
     }
 
-    public void add(InterfacesInstanceProvider<?> provider) {
-        this.providers .add(provider);
-    }
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        Class<?> declaringClass = method.getDeclaringClass();
+        Object impl = impls.get(declaringClass);
+        if (impl == null) throw new IncompleteImplementationException(format("No implementation could be found for %s", method));
 
-    protected void checkCompleteImplementation(Set<Class<?>> allMixinIntfs) {
-        Set<Class<?>> allProvidersIntfs = from(providers).transformAndConcat(PROVIDER_IMPLEMENTED_INTFS_FN).transformAndConcat(ALL_INTFS_FN).toSet();
-
-        Set<Class<?>> differences = from(Sets.difference(allMixinIntfs, allProvidersIntfs)).filter(WITH_DECLARED_METHODS_FN).toSet();
-        if (!differences.isEmpty()) {
-            throw new IncompleteImplementationException(format("The following interfaces are  missing: %s", Joiner.on(", ").join(differences)));
+        try {
+            if (Proxy.isProxyClass(impl.getClass())) {
+                // if it is a proxy, we get the handler and call it directly but with our proxy object
+                InvocationHandler wrappedHandler = Proxy.getInvocationHandler(impl);
+                return wrappedHandler.invoke(proxy, method, args);
+            } else {
+                return method.invoke(impl, args);
+            }
+        } catch (InvocationTargetException e) {
+            throw Preconditions.checkNotNull(e.getTargetException());
         }
     }
 
@@ -106,40 +182,30 @@ public class ProxyInvocationHandler<T> implements InvocationHandler {
         }
     }
 
-    @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        Class<?> declaringClass = method.getDeclaringClass();
-        Object impl = impls.get(declaringClass);
-        if (impl == null) throw new IncompleteImplementationException(format("No implementation could be found for %s", method));
+    protected void checkCompleteImplementation(Set<Class<?>> allMixinIntfs) {
+        Set<Class<?>> allProvidersIntfs = from(providers).transformAndConcat(PROVIDER_IMPLEMENTED_INTFS_FN).transformAndConcat(ALL_INTFS_FN).toSet();
 
-        if (Proxy.isProxyClass(impl.getClass())) {
-            // if it is a proxy, we get the handler and call it directly but with our proxy object
-            InvocationHandler wrappedHandler = Proxy.getInvocationHandler(impl);
-            return wrappedHandler.invoke(proxy, method, args);
-        } else {
-            return method.invoke(impl, args);
+        Set<Class<?>> differences = from(Sets.difference(allMixinIntfs, allProvidersIntfs)).filter(WITH_DECLARED_METHODS_FN).toSet();
+        if (!differences.isEmpty()) {
+            throw new IncompleteImplementationException(format("The following interfaces are  missing: %s", Joiner.on(", ").join(differences)));
         }
     }
 
-    @SuppressWarnings("unchecked")
-    protected void unsafeDoConfigure(@SuppressWarnings("rawtypes") MixinConfigurer configurer) {
-        configurer.configure(this);
-    }
-
     protected void instanciateProviders(Set<Class<?>> allMixinIntfs) {
-        for (InterfacesInstanceProvider<?> provider : providers) {
+        LOGGER.trace("Instanciating providers for [{}]", allMixinIntfs);
+        for (InterfacesInstanceProvider provider : providers) {
             Set<Class<?>> allProviderIntfs = from(provider.getImplementedInterfaces()).transformAndConcat(ALL_INTFS_FN).toSet();
             Object impl = provider.provide();
             for (Class<?> intf : allProviderIntfs ) {
                 if (!(allMixinIntfs.contains(intf) || intf == Object.class)) {
-                    LOGGER.trace("This Mixin class does not implement {}, skipping its instance provider", intf);
+                    LOGGER.trace("This Mixin class does not implement [{}], skipping its instance provider", intf);
                     continue;
                 }
                 if (impls.containsKey(intf)) {
-                    LOGGER.trace("Interface {} was already implemented by prior instance provider, skipping this ones", intf);
+                    LOGGER.trace("[{}] was already implemented by prior instance provider, skipping this ones", intf);
                 } else {
                     impls.put(intf, impl);
-                    LOGGER.trace("Interface {} is implemented by {}", intf, impl);
+                    LOGGER.trace("[{}] is implemented by instance of [{}]", intf, impl.getClass());
                 }
             }
         }

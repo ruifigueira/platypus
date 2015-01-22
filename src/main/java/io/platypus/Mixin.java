@@ -12,7 +12,7 @@ public interface Mixin {
 
     public static class Impl implements Mixin {
 
-        private Object that;
+        protected Object that;
 
         public Impl() {
             that = this;
