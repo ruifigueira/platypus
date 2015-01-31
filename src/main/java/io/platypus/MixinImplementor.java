@@ -14,4 +14,5 @@ public interface MixinImplementor {
     public <T> Implementation<T> implement(Class<T> clazz);
     public Implementation<Object> implement(Class<?> ... clazz);
     public Implementation<Object> implement(Collection<Class<?>> clazzes);
+    public Implementation<Object> implementRemainers();
 }

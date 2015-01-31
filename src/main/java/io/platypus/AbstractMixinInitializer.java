@@ -58,6 +58,16 @@ public abstract class AbstractMixinInitializer implements MixinInitializer {
         }
     }
 
+    class RemainersImplementation extends Implementation {
+
+        @Override
+        public MixinInitializer with(InstanceProvider<?> provider) {
+            mixinImplementor.implementRemainers().with(provider);
+            return AbstractMixinInitializer.this;
+        }
+    }
+
+
     private MixinImplementor mixinImplementor;
 
     protected Implementation implement(Class<?> ... intfs) {
@@ -66,6 +76,10 @@ public abstract class AbstractMixinInitializer implements MixinInitializer {
 
     protected Implementation implement(Collection<Class<?>> intfs) {
         return new Implementation(intfs);
+    }
+
+    protected Implementation implementRemainers() {
+        return new RemainersImplementation();
     }
 
     protected abstract void initialize();

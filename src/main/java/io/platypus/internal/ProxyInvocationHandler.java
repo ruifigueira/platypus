@@ -120,7 +120,7 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
         // this will add all the necessary providers
         initializer.initialize(this);
 
-        Set<Class<?>> allMixinIntfs = from(mixinClass.intfs).transformAndConcat(ALL_INTFS_FN).toSet();
+        Set<Class<?>> allMixinIntfs = getAllInterfaces(mixinClass);
         checkCompleteImplementation(allMixinIntfs);
 
         instanciateProviders(allMixinIntfs);
@@ -149,6 +149,12 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
     @Override
     public Implementation<Object> implement(Collection<Class<?>> clazzes) {
         return new ImplementationImpl<Object>(clazzes);
+    }
+
+    @Override
+    public Implementation<Object> implementRemainers() {
+        Set<Class<?>> remainers = getRemainers(getAllInterfaces(mixinClass));
+        return new ImplementationImpl<Object>(remainers);
     }
 
     public T getProxy() {
@@ -183,12 +189,20 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
     }
 
     protected void checkCompleteImplementation(Set<Class<?>> allMixinIntfs) {
-        Set<Class<?>> allProvidersIntfs = from(providers).transformAndConcat(PROVIDER_IMPLEMENTED_INTFS_FN).transformAndConcat(ALL_INTFS_FN).toSet();
-
-        Set<Class<?>> differences = from(Sets.difference(allMixinIntfs, allProvidersIntfs)).filter(WITH_DECLARED_METHODS_FN).toSet();
+        Set<Class<?>> differences = getRemainers(allMixinIntfs);
         if (!differences.isEmpty()) {
             throw new IncompleteImplementationException(format("The following interfaces are  missing: %s", Joiner.on(", ").join(differences)));
         }
+    }
+
+    protected ImmutableSet<Class<?>> getAllInterfaces(MixinClassImpl<T> mixinClass) {
+        return from(mixinClass.intfs).transformAndConcat(ALL_INTFS_FN).toSet();
+    }
+
+    protected Set<Class<?>> getRemainers(Set<Class<?>> allMixinIntfs) {
+        Set<Class<?>> allProvidersIntfs = from(providers).transformAndConcat(PROVIDER_IMPLEMENTED_INTFS_FN).transformAndConcat(ALL_INTFS_FN).toSet();
+        Set<Class<?>> differences = from(Sets.difference(allMixinIntfs, allProvidersIntfs)).filter(WITH_DECLARED_METHODS_FN).toSet();
+        return differences;
     }
 
     protected void instanciateProviders(Set<Class<?>> allMixinIntfs) {

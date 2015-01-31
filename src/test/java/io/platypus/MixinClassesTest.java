@@ -64,6 +64,22 @@ public class MixinClassesTest {
         assertThat(fooBar.bar(), equalTo("generic bar"));
     }
 
+    @Test
+    public void testRemainers() {
+        MixinClass<FooBar> fooBarClass = MixinClasses.create(FooBar.class, Foo.class, Bar.class);
+
+        FooBar fooBar = fooBarClass.newInstance(new AbstractMixinInitializer() {
+            @Override
+            protected void initialize() {
+                implement(Foo.class).with(new FooImpl());
+                implementRemainers().with(new BarImpl());
+            }
+        });
+
+        assertThat(fooBar.foo(), equalTo("generic foo"));
+        assertThat(fooBar.bar(), equalTo("generic bar"));
+    }
+
     @Test(expected = IncompleteImplementationException.class)
     public void testInterfaceWithNoImplementation() {
         MixinClass<FooBar> fooBarClass = MixinClasses.create(FooBar.class);
