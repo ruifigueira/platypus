@@ -4,8 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.lang.reflect.InvocationHandler;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
@@ -33,10 +33,10 @@ public abstract class AbstractMixinInitializer implements MixinInitializer {
 
     public class Implementation {
 
-        private final Set<Class<?>> intfs;
+        protected final Set<Class<?>> intfs;
 
-        public Implementation(Class<?> ... intfs) {
-            this(Arrays.asList(intfs));
+        public Implementation() {
+            this(Collections.<Class<?>>emptyList());
         }
 
         public Implementation(Collection<Class<?>> intfs) {
@@ -58,6 +58,20 @@ public abstract class AbstractMixinInitializer implements MixinInitializer {
         }
     }
 
+    public class OverrideImplementation extends Implementation {
+
+        public OverrideImplementation(Collection<Class<?>> intfs) {
+            super(intfs);
+        }
+
+        @Override
+        public MixinInitializer with(InstanceProvider<?> provider) {
+            Preconditions.checkState(mixinImplementor != null, "override(...).with(...) can only be called inside configure()!");
+            mixinImplementor.override(intfs).with(provider);
+            return AbstractMixinInitializer.this;
+        }
+    }
+
     class RemainersImplementation extends Implementation {
 
         @Override
@@ -71,11 +85,19 @@ public abstract class AbstractMixinInitializer implements MixinInitializer {
     private MixinImplementor mixinImplementor;
 
     protected Implementation implement(Class<?> ... intfs) {
-        return new Implementation(intfs);
+        return implement(ImmutableSet.copyOf(intfs));
     }
 
     protected Implementation implement(Collection<Class<?>> intfs) {
         return new Implementation(intfs);
+    }
+
+    protected Implementation override(Class<?> ... intfs) {
+        return override(ImmutableSet.copyOf(intfs));
+    }
+
+    protected Implementation override(Collection<Class<?>> intfs) {
+        return new OverrideImplementation(intfs);
     }
 
     protected Implementation implementRemainers() {

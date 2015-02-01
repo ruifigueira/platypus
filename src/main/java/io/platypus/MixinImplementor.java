@@ -15,4 +15,8 @@ public interface MixinImplementor {
     public Implementation<Object> implement(Class<?> ... clazz);
     public Implementation<Object> implement(Collection<Class<?>> clazzes);
     public Implementation<Object> implementRemainers();
+
+    public <T> Implementation<T> override(Class<T> clazz);
+    public Implementation<Object> override(Class<?> ... clazz);
+    public Implementation<Object> override(Collection<Class<?>> clazzes);
 }

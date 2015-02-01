@@ -63,10 +63,16 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
 
         private final InstanceProvider<?> provider;
         private final Set<Class<?>> intfs;
+        private final boolean overrides;
 
         public InterfacesInstanceProvider(InstanceProvider<?> provider, Collection<Class<?>> intfs) {
+            this(provider, intfs, false);
+        }
+
+        public InterfacesInstanceProvider(InstanceProvider<?> provider, Collection<Class<?>> intfs, boolean overrides) {
             this.provider = provider;
             this.intfs = ImmutableSet.copyOf(intfs);
+            this.overrides = overrides;
         }
 
         public Object provide() {
@@ -76,11 +82,15 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
         public Set<Class<?>> getImplementedInterfaces() {
             return intfs;
         }
+
+        public boolean overrides() {
+            return overrides;
+        }
     }
 
     private class ImplementationImpl<I> implements Implementation<I> {
 
-        private final Collection<Class<?>> intfs;
+        protected final Collection<Class<?>> intfs;
 
         public ImplementationImpl(Class<I> intf) {
             this.intfs = Casts.unsafeCast(Collections.singleton(intf));
@@ -105,7 +115,23 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
             providers.add(new InterfacesInstanceProvider(provider, intfs));
             return ProxyInvocationHandler.this;
         }
+    }
 
+    private class OverrideImplementationImpl<I> extends ImplementationImpl<I> {
+
+        public OverrideImplementationImpl(Class<I> intf) {
+            super(intf);
+        }
+
+        public OverrideImplementationImpl(Collection<Class<?>> intfs) {
+            super(intfs);
+        }
+
+        @Override
+        public MixinImplementor with(InstanceProvider<? extends I> provider) {
+            providers.add(new InterfacesInstanceProvider(provider, intfs, true));
+            return ProxyInvocationHandler.this;
+        }
     }
 
     private final MixinClassImpl<T> mixinClass;
@@ -155,6 +181,21 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
     public Implementation<Object> implementRemainers() {
         Set<Class<?>> remainers = getRemainers(getAllInterfaces(mixinClass));
         return new ImplementationImpl<Object>(remainers);
+    }
+
+    @Override
+    public <I> Implementation<I> override(Class<I> clazz) {
+        return new OverrideImplementationImpl<I>(clazz);
+    }
+
+    @Override
+    public Implementation<Object> override(Class<?>... clazz) {
+        return override(Arrays.asList(clazz));
+    }
+
+    @Override
+    public Implementation<Object> override(Collection<Class<?>> clazzes) {
+        return new OverrideImplementationImpl<Object>(clazzes);
     }
 
     public T getProxy() {
@@ -215,11 +256,12 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
                     LOGGER.trace("This Mixin class does not implement [{}], skipping its instance provider", intf);
                     continue;
                 }
-                if (impls.containsKey(intf)) {
+                if (impls.containsKey(intf) && !provider.overrides()) {
                     LOGGER.trace("[{}] was already implemented by prior instance provider, skipping this ones", intf);
                 } else {
+                    boolean overrides = impls.containsKey(intf) && provider.overrides();
                     impls.put(intf, impl);
-                    LOGGER.trace("[{}] is implemented by instance of [{}]", intf, impl.getClass());
+                    LOGGER.trace("[{}] is {} by instance of [{}]", overrides ? "overriden" : "implemented", intf, impl.getClass());
                 }
             }
         }

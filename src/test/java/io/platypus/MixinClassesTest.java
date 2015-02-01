@@ -48,6 +48,13 @@ public class MixinClassesTest {
         }
     }
 
+    public class AltBarImpl implements Bar {
+        @Override
+        public String bar() {
+            return "alternative generic bar";
+        }
+    }
+
     @Test
     public void testSpecificImplementation() {
         MixinClass<FooBar> fooBarClass = MixinClasses.create(FooBar.class, Foo.class, Bar.class);
@@ -78,6 +85,23 @@ public class MixinClassesTest {
 
         assertThat(fooBar.foo(), equalTo("generic foo"));
         assertThat(fooBar.bar(), equalTo("generic bar"));
+    }
+
+    @Test
+    public void testOverride() {
+        MixinClass<FooBar> fooBarClass = MixinClasses.create(FooBar.class, Foo.class, Bar.class);
+
+        FooBar fooBar = fooBarClass.newInstance(new AbstractMixinInitializer() {
+            @Override
+            protected void initialize() {
+                implement(Foo.class).with(new FooImpl());
+                implement(Bar.class).with(new BarImpl());
+                override(Bar.class).with(new AltBarImpl());
+            }
+        });
+
+        assertThat(fooBar.foo(), equalTo("generic foo"));
+        assertThat(fooBar.bar(), equalTo("alternative generic bar"));
     }
 
     @Test(expected = IncompleteImplementationException.class)
