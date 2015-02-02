@@ -1,4 +1,4 @@
-package io.platypus;
+package platypus;
 
 import java.lang.reflect.InvocationHandler;
 import java.util.Collection;

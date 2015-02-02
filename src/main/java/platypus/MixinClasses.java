@@ -1,10 +1,10 @@
-package io.platypus;
-
-import io.platypus.internal.MixinClassImpl;
+package platypus;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
+
+import platypus.internal.MixinClassImpl;
 
 import com.google.common.collect.Sets;
 

@@ -1,4 +1,4 @@
-package io.platypus.internal;
+package platypus.internal;
 
 public class Casts {
 

@@ -1,4 +1,4 @@
-package io.platypus;
+package platypus;
 
 public class IncompleteImplementationException extends RuntimeException {
 

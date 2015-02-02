@@ -1,11 +1,9 @@
-package io.platypus.internal;
+package platypus.internal;
 
 import static com.google.common.base.Predicates.not;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.collect.FluentIterable.from;
-import static io.platypus.internal.Casts.unsafeCast;
-import io.platypus.MixinClass;
-import io.platypus.MixinInitializer;
+import static platypus.internal.Casts.unsafeCast;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
@@ -17,6 +15,9 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import platypus.MixinClass;
+import platypus.MixinInitializer;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;

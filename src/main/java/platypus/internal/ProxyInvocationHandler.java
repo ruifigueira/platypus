@@ -1,14 +1,8 @@
-package io.platypus.internal;
+package platypus.internal;
 
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.collect.FluentIterable.from;
 import static java.lang.String.format;
-import io.platypus.IncompleteImplementationException;
-import io.platypus.InstanceProvider;
-import io.platypus.InstanceProviders;
-import io.platypus.Mixin;
-import io.platypus.MixinImplementor;
-import io.platypus.MixinInitializer;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -23,6 +17,13 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import platypus.IncompleteImplementationException;
+import platypus.InstanceProvider;
+import platypus.InstanceProviders;
+import platypus.Mixin;
+import platypus.MixinImplementor;
+import platypus.MixinInitializer;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;

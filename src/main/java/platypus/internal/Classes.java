@@ -1,4 +1,4 @@
-package io.platypus.internal;
+package platypus.internal;
 
 import java.util.Collection;
 import java.util.Set;

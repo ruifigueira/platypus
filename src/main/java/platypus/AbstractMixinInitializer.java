@@ -1,4 +1,4 @@
-package io.platypus;
+package platypus;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;

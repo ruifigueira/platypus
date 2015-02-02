@@ -1,4 +1,4 @@
-package io.platypus;
+package platypus;
 
 public interface MixinInitializer {
 

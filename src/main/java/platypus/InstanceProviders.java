@@ -1,8 +1,8 @@
-package io.platypus;
+package platypus;
 
 import static com.google.common.collect.Iterables.toArray;
-import static io.platypus.internal.Casts.unsafeCast;
 import static java.lang.String.format;
+import static platypus.internal.Casts.unsafeCast;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;

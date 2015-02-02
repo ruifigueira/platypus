@@ -1,4 +1,4 @@
-package io.platypus;
+package platypus;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -9,6 +9,14 @@ import static org.junit.Assert.assertThat;
 import java.lang.reflect.Method;
 
 import org.junit.Test;
+
+import platypus.AbstractMixinInitializer;
+import platypus.IncompleteImplementationException;
+import platypus.InstanceProvider;
+import platypus.InstanceProviders;
+import platypus.Mixin;
+import platypus.MixinClass;
+import platypus.MixinClasses;
 
 import com.google.common.base.Defaults;
 import com.google.common.reflect.AbstractInvocationHandler;
