@@ -12,7 +12,8 @@
     <artifactId>platypus</artifactId>
     <version>0.1.1-SNAPSHOT</version>
     <name>Platypus - Java Mixins</name>
-
+ 	<url>https://github.com/ruifigueira/platypus</url>
+ 	
     <developers>
         <developer>
             <id>rui.figueira</id>
