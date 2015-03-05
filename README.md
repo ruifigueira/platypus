@@ -50,11 +50,11 @@ with complex mixins, where you can chain different interface calls using the `.a
 For instance, check the `delorean.as(Aircraft.class).fly()` in the adaptation of the previous example:
 
 ```java
-public interface Car implements Mixin {
+public interface Car extends Mixin {
     String drive();
 }
 
-public interface Aircraft implements Mixin {
+public interface Aircraft extends Mixin {
     String fly();
 }
 
