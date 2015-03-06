@@ -135,6 +135,53 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
         }
     }
 
+    /**
+     * Provide an implementation for Object methods.
+     * 
+     * <p>
+     * This object is always used as the implementation of Object methods but
+     * also delegates to any explicitly specified implementation. It basically
+     * ensures that a proxy instance is equal to itself before doing any
+     * delegation.
+     * </p>
+     * 
+     * @author m4ktub
+     */
+    private class ObjectImplementation {
+
+        private Object delegate;
+
+        public ObjectImplementation(Object delegate) {
+            super();
+
+            this.delegate = delegate;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+
+            if (Proxy.isProxyClass(obj.getClass())) {
+                return Proxy.getInvocationHandler(obj).equals(ProxyInvocationHandler.this);
+            } else {
+                return delegate != null && delegate.equals(obj);
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return delegate != null ? delegate.hashCode() : super.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return delegate != null ? delegate.toString() : super.toString();
+        }
+        
+    }
+
     private final MixinClassImpl<T> mixinClass;
     private final T proxy;
     private final List<InterfacesInstanceProvider> providers = Lists.newArrayList();
@@ -152,6 +199,7 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
 
         instanciateProviders(allMixinIntfs);
         initImplementationsProxy();
+        ensureObjectImplementation();
     }
 
     private void initImplementationsProxy() {
@@ -266,6 +314,10 @@ public class ProxyInvocationHandler<T> implements InvocationHandler, MixinImplem
                 }
             }
         }
+    }
+
+    protected void ensureObjectImplementation() {
+        impls.put(Object.class, new ObjectImplementation(impls.get(Object.class)));
     }
 
 }

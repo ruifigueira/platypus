@@ -64,6 +64,46 @@ public class MixinClassesTest {
     }
 
     @Test
+    public void testDefaultObjectMethods() {
+    	MixinClass<Bar> barClass = MixinClasses.create(Bar.class);
+    	
+    	final BarImpl barImpl = new BarImpl();
+    	Bar bar = barClass.newInstance(new AbstractMixinInitializer() {
+    		@Override
+    		protected void initialize() {
+    			implement(Bar.class).with(barImpl);
+    		}
+    	});
+
+    	assertThat(bar.hashCode(), not(equalTo(barImpl.hashCode())));
+    	assertThat(bar.toString(), not(equalTo(barImpl.toString())));
+    	assertThat(bar.equals(bar), equalTo(true));
+    	assertThat(bar.equals(barImpl), equalTo(false));
+    }
+
+    @Test
+    public void testExplicitObjectMethods() {
+    	MixinClass<Bar> barClass = MixinClasses.create(Bar.class);
+    	
+    	final FooImpl objImpl = new FooImpl();
+    	final BarImpl barImpl = new BarImpl();
+    	Bar bar = barClass.newInstance(new AbstractMixinInitializer() {
+    		@Override
+    		protected void initialize() {
+    			implement(Object.class).with(objImpl);
+    			implement(Bar.class).with(barImpl);
+    		}
+    	});
+    	
+    	assertThat(bar.hashCode(), equalTo(objImpl.hashCode()));
+    	assertThat(bar.toString(), equalTo(objImpl.toString()));
+    	assertThat(bar.equals(bar), equalTo(true));
+    	assertThat(bar.equals(objImpl), equalTo(true));
+    	assertThat(bar.equals(barImpl), equalTo(false));
+    	assertThat(objImpl.as(Object.class), sameInstance((Object) bar));
+    }
+    
+    @Test
     public void testSpecificImplementation() {
         MixinClass<FooBar> fooBarClass = MixinClasses.create(FooBar.class, Foo.class, Bar.class);
 
