@@ -10,14 +10,6 @@ import java.lang.reflect.Method;
 
 import org.junit.Test;
 
-import platypus.AbstractMixinInitializer;
-import platypus.IncompleteImplementationException;
-import platypus.InstanceProvider;
-import platypus.InstanceProviders;
-import platypus.Mixin;
-import platypus.MixinClass;
-import platypus.MixinClasses;
-
 import com.google.common.base.Defaults;
 import com.google.common.reflect.AbstractInvocationHandler;
 
@@ -66,7 +58,7 @@ public class MixinClassesTest {
     @Test
     public void testDefaultObjectMethods() {
     	MixinClass<Bar> barClass = MixinClasses.create(Bar.class);
-    	
+
     	final BarImpl barImpl = new BarImpl();
     	Bar bar = barClass.newInstance(new AbstractMixinInitializer() {
     		@Override
@@ -84,7 +76,7 @@ public class MixinClassesTest {
     @Test
     public void testExplicitObjectMethods() {
     	MixinClass<Bar> barClass = MixinClasses.create(Bar.class);
-    	
+
     	final FooImpl objImpl = new FooImpl();
     	final BarImpl barImpl = new BarImpl();
     	Bar bar = barClass.newInstance(new AbstractMixinInitializer() {
@@ -94,7 +86,7 @@ public class MixinClassesTest {
     			implement(Bar.class).with(barImpl);
     		}
     	});
-    	
+
     	assertThat(bar.hashCode(), equalTo(objImpl.hashCode()));
     	assertThat(bar.toString(), equalTo(objImpl.toString()));
     	assertThat(bar.equals(bar), equalTo(true));
@@ -102,7 +94,7 @@ public class MixinClassesTest {
     	assertThat(bar.equals(barImpl), equalTo(false));
     	assertThat(objImpl.as(Object.class), sameInstance((Object) bar));
     }
-    
+
     @Test
     public void testSpecificImplementation() {
         MixinClass<FooBar> fooBarClass = MixinClasses.create(FooBar.class, Foo.class, Bar.class);
@@ -230,4 +222,23 @@ public class MixinClassesTest {
         assertThat(mixin.as(Foo.class), sameInstance(mixin));
     }
 
+    @Test
+    public void testToStringOverride() {
+        MixinClass<Mixin> mixinClass = MixinClasses.create(Mixin.class, Foo.class);
+        final Foo foo = new FooImpl();
+        // this will initialize foo with the proxy
+        Mixin mixin = mixinClass.newInstance(new AbstractMixinInitializer() {
+            @Override
+            protected void initialize() {
+                implement(Object.class).with(new Object() {
+                    @Override
+                    public String toString() {
+                        return "I'm an object";
+                    }
+                });
+                implement(Foo.class).with(foo);
+            }
+        });
+        assertThat(mixin.toString(), equalTo("I'm an object"));
+    }
 }

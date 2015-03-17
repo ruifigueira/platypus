@@ -14,7 +14,7 @@ import com.google.common.collect.ImmutableSet;
 /**
  * Extend this class to configure mixin instances initialization.
  *
- * <pre>
+ * <pre>{@code
  * MixinClass<FooBar> fooBarClass = Mixins.createClass(FooBar.class);
  * FooBar fooBar = fooBarClass.newInstance(new AbstractMixinConfigurer<FooBar>() {
  *   &#64;Override
@@ -23,11 +23,9 @@ import com.google.common.collect.ImmutableSet;
  *     implement(Bar.class).with(new BarImpl());
  *   }
  * });
- * </pre>
+ * }</pre>
  *
  * @author rui.figueira
- *
- * @param <T>
  */
 public abstract class AbstractMixinInitializer implements MixinInitializer {
 
